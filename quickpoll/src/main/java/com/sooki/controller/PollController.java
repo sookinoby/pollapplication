@@ -15,18 +15,29 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.sooki.domain.Poll;
-import com.sooki.expection.ResourceNotFoundException;
+import com.sooki.dto.error.ErrorDetail;
+import com.sooki.exception.ResourceNotFoundException;
 import com.sooki.repository.PollRepository;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
+
 
 
 @RestController
+@Api(value = "polls", description = "Poll API")
 public class PollController {
 
 	@Inject
 	private PollRepository pollRepository;
 	
 	@RequestMapping(value="/polls", method=RequestMethod.POST)
-	public ResponseEntity<?> createPoll(@Valid @RequestBody Poll poll) {
+	@ApiOperation(value = "Creates a new Poll", notes="The newly created poll Id will be sent in the location response header", 
+					response = Void.class)
+	@ApiResponses(value = {@ApiResponse(code=201, message="Poll Created Successfully", response=Void.class),  
+			@ApiResponse(code=500, message="Error creating Poll", response=ErrorDetail.class) } )
+	public ResponseEntity<Void> createPoll(@Valid @RequestBody Poll poll) {
 		poll = pollRepository.save(poll);
 		
 		// Set the location header for the newly created resource
@@ -37,28 +48,38 @@ public class PollController {
 		return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
 	}
 
-	@RequestMapping(value="/polls", method=RequestMethod.GET)
-	public ResponseEntity<Iterable<Poll>> getAllPolls() {
-		Iterable<Poll> allPolls = pollRepository.findAll();
-		return new ResponseEntity<>(allPolls, HttpStatus.OK);
-	}
-
 	@RequestMapping(value="/polls/{pollId}", method=RequestMethod.GET)
+	@ApiOperation(value = "Retrieves given Poll", response=Poll.class)
+	@ApiResponses(value = {@ApiResponse(code=200, message="", response=Poll.class),  
+			@ApiResponse(code=404, message="Unable to find Poll", response=ErrorDetail.class) } )
 	public ResponseEntity<?> getPoll(@PathVariable Long pollId) {
 		verifyPoll(pollId);
 		Poll p = pollRepository.findOne(pollId);
 		return new ResponseEntity<> (p, HttpStatus.OK);
 	}
 	
+	@RequestMapping(value="/polls", method=RequestMethod.GET)
+	@ApiOperation(value = "Retrieves all the polls", response=Poll.class, responseContainer="List")
+	public ResponseEntity<Iterable<Poll>> getAllPolls() {
+		Iterable<Poll> allPolls = pollRepository.findAll();
+		return new ResponseEntity<>(allPolls, HttpStatus.OK);
+	}
+
 	@RequestMapping(value="/polls/{pollId}", method=RequestMethod.PUT)
-	public ResponseEntity<?> updatePoll(@RequestBody Poll poll, @PathVariable Long pollId) {
+	@ApiOperation(value = "Updates given Poll", response=Void.class)
+	@ApiResponses(value = {@ApiResponse(code=200, message="", response=Void.class),  
+			@ApiResponse(code=404, message="Unable to find Poll", response=ErrorDetail.class) } )
+	public ResponseEntity<Void> updatePoll(@RequestBody Poll poll, @PathVariable Long pollId) {
 		verifyPoll(pollId);
 		pollRepository.save(poll);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
 	@RequestMapping(value="/polls/{pollId}", method=RequestMethod.DELETE)
-	public ResponseEntity<?> deletePoll(@PathVariable Long pollId) {
+	@ApiOperation(value = "Deletes given Poll", response=Void.class)
+	@ApiResponses(value = {@ApiResponse(code=200, message="", response=Void.class),  
+			@ApiResponse(code=404, message="Unable to find Poll", response=ErrorDetail.class) } )
+	public ResponseEntity<Void> deletePoll(@PathVariable Long pollId) {
 		verifyPoll(pollId);
 		pollRepository.delete(pollId);
 		return new ResponseEntity<>(HttpStatus.OK);
